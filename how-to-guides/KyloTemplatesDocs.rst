@@ -1,6 +1,6 @@
-======================
+====================
 Kylo Templates Guide
-======================
+====================
 
 Templates facilitate the creation of data flows. They can be:
 
@@ -13,10 +13,10 @@ Templates facilitate the creation of data flows. They can be:
 
 
 Setup templates
-======================
+===============
 
 Import Kylo template
----------------------
+--------------------
 
 1. Import template from file
 
@@ -42,7 +42,7 @@ Import reusable template
 3. Register the template
 
 Import flow template
--------------------------
+--------------------
 
 1. Import template from NiFi environment (as we want to customize it)
 
@@ -55,7 +55,7 @@ Import flow template
 5. Register the template
 
 Update template
-===================
+===============
 
 1. Remember the template name <template_name> from NiFi
 
@@ -86,21 +86,21 @@ When Data is sent to Kylo Operations Manager it indicates if the flow file has b
 Additionally if you manually 'Empty the Queue' in NiFi it will fail those corresponding jobs in Kylo.
 
 Available templates
-=======================
+===================
 
 Kylo provides some ready to be used templates in the `Kylo repository <https://github.com/Teradata/kylo/tree/master/samples/templates>`_
 
 Data Ingest
--------------------
+-----------
 
 Data Ingest template is used to import data from with various formats (CSV, JSON, AVRO, Parquet, ORC) into Hive tables.
 
 S3
-*******************
+**
 :doc:`../how-to-guides/S3DataIngestTemplate`
 
 JSON
-*******************
+****
 
 There is a limitation with the JSON file format:
 
@@ -118,14 +118,14 @@ Example:
 ..
 
 Data Transformation
---------------------
+-------------------
 
 Data Transformation is used to transform/wrangle data with various operations from Spark ML.
 
 Several tables can be taken from a data source and be joined, denormalized or transformed together, to result a new data table.
 
 Accesing S3 and other distributed filesystems
-***********************************************
+*********************************************
 
 :doc:`../how-to-guides/AccessingS3fromtheDataWrangler`
 
@@ -138,3 +138,91 @@ Accesing S3 and other distributed filesystems
    :width: 308px
    :height: 157px
 
+.. _repository:
+
+Repository
+==========
+Repository makes it easier to register/import templates into Kylo without having to browse through the file system everytime.
+By default, templates from **/opt/kylo/setup/data/repository/templates**, coming from **kylo.template.repository.default** property, are displayed (see screenshot below).
+    |repository_templates_image|
+The default Kylo Repository is read-only and therefore templates cannot be published to this repository. Create a new repository to publish new or modified templates.
+
+.. |repository_templates_image| image:: ../media/repository_templates/kylo_templates.png
+   :width: 401px
+   :height: 181px
+
+Create new repository
+---------------------
+1. Open repositories.json under /opt/kylo/kylo-services/config folder.
+2. Add a new line between [] brackets.
+
+.. code-block:: none
+
+    {"name": "<name-of-repository>", "readOnly": false, "location": "<path-from-root>", "type":"FileSystem"}
+
+..
+
+    - **name**: Name of repository to be displayed.
+    - **readOnly**: Templates can be imported from this repository, but cannot be published here.
+    - **location**: Folder location from root with read-write access to Kylo. If not reachable, it is not displayed on UI.
+    - **type**: Templates or feeds will be read from filesystem. Only filesystem is supported as of now, more possibilities may be added in the future.
+3. Repeat Step 2 to add more repositories. Separate the lines by a comma.
+4. Restart kylo-services (service kylo-services restart).
+
+For example, if the repositories.json file looks as below:
+
+.. code-block:: none
+
+    {"name": "Custom Repository", "readOnly": false, "location": "/opt/0.10.0/templates", "type":"FileSystem"}
+
+..
+The new repository is now visible from Repository page (see below)
+|new_repository_image|
+
+
+.. |new_repository_image| image:: ../media/repository_templates/create_repository.png
+   :width: 401px
+   :height: 181px
+
+Import Template
+---------------
+- Go to Admin -> Repository
+- Select the repository from drop down
+- Click 'Import' to import or update the template.
+
+Publish Template
+----------------
+- Open any of the registered templates. 
+- Click on Publish.
+- Select the repository to publish to.
+|publish_template|
+
+- Go to Admin -> Repository and select repository from dropdown, to verify the template has been published.
+
+.. important::
+   If the repository location in repositories.json does not exist/not reachable/readOnly=true then the repository will not be displayed in publish popup window.
+
+
+.. |publish_template| image:: ../media/repository_templates/publish_template.png
+   :width: 401px
+   :height: 181px
+
+Add change comment to template
+------------------------------
+- If a registered template is modified, you can enter a brief description of the change before saving the template.
+|add_template_comment|
+
+View change comments
+--------------------
+- Any change comments for a template can be viewed in template details view
+|view_change_history|
+
+.. |add_template_comment| image:: ../media/repository_templates/add_template_comment.png
+   :width: 401px
+   :height: 181px
+
+.. |view_change_history| image:: ../media/repository_templates/view_change_history.png
+   :width: 401px
+   :height: 181px
+
+An internal cache is maintained to track template updates. In cluster mode, this cache needs to be refreshed. Add **expire.repository.cache=true** in application.properties to enable this cache auto refresh.

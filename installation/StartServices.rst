@@ -1,6 +1,6 @@
-===============
+==============
 Start Services
-===============
+==============
 
 Start NiFi
 ----------
@@ -8,6 +8,8 @@ Start NiFi
 .. code-block:: shell
 
     $ service nifi start
+
+..
 
 At this point all services should be running. Verify by running:
 

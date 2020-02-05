@@ -1,10 +1,11 @@
-=========================
+=======================
 Create Service Accounts
-=========================
+=======================
 
 Creation of users and groups is done manually because many organizations have their own user and group management system. Therefore we cannot script it as part of the RPM install.
 
-.. note:: Each of these should be run on the node on which the software will be installed. If a machine will run nifi, kylo and activemq, all users/groups should be created. If running individual services, only the appropriate user/group for that service should be created, not all of them.
+.. note:: Each of these should be run on the node on which the software will be installed. If a machine will run nifi, kylo, activemq and vault, all users/groups should be created.
+          If running individual services, only the appropriate user/group for that service should be created, not all of them.
 
 Option 1: Install all users/groups on single node
 --------------------------------------------------
@@ -36,7 +37,9 @@ The following command can be used to confirm if the user and group creation was 
   grep 'nifi\|kylo\|activemq' /etc/group /etc/passwd
 ..
 
-This command should give two results per user, one for the user in /etc/passwd and one in /etc/group. For example, if you added all the users to an individual machine, there should be six lines of output. If you just added an individual user, there will be two lines of output.
+This command should give two results per user, one for the user in /etc/passwd and one in /etc/group.
+For example, if you added all the users to an individual machine, there should be six lines of output.
+If you just added an individual user, there will be two lines of output.
 
 If the groups are missing, they can be added individually:
 

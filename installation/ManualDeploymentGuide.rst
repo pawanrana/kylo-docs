@@ -28,7 +28,7 @@ everything to one node, the setup directory would typically be:
 
     SETUP_DIR=/opt/kylo/setup
 
-You might install some of these components on a differnet edge node than where Kylo is installed. In this case, copy
+You might install some of these components on a different edge node than where Kylo is installed. In this case, copy
 the setup folder or offline TAR file to those nodes that do not have the Kylo applications installed. In that case, use this SETUP_DIR command:
 
 .. code-block:: properties
@@ -38,7 +38,7 @@ the setup folder or offline TAR file to those nodes that do not have the Kylo ap
 ..
 
 Step 2: Create the "dladmin" user
-===========================
+=================================
 
 Before logging into Kylo for the first time you must create a password for the "dladmin" user. To created the password please do the following:
 
@@ -51,19 +51,7 @@ a. Create a users.properties file and add the username/password
 
 ..
 
-b. Modify the /opt/kylo/kylo-ui/conf/application.properties file
-
-.. code-block:: shell
-
-    $ vi /opt/kylo/kylo-ui/conf/application.properties
-
-        # uncomment this line
-        security.auth.file.users=file:///opt/kylo/users.properties
-
-
-..
-
-c. Modify the /opt/kylo/kylo-services/conf/application.properties file
+b. Modify the /opt/kylo/kylo-services/conf/application.properties file
 
 .. code-block:: shell
 
@@ -134,8 +122,9 @@ If you already have Java 8 installed, and want to reference that installation, t
 Step 4: Install Java Cryptographic Extension
 ============================================
 
-The Java 8 install script above will automatically download and install the `Java Cryptographic Extension <http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html>`__.
-This extension is required to allow encrypted property values in the Kylo configuration files. If you already have a Java 8 installed on the
+Skip this step if you followed Scenario 2 in the previous step or already installed JCE for Java 8.
+
+The `Java Cryptographic Extension <http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html>`__ is required to allow encrypted property values in the Kylo configuration files. If you already have a Java 8 installed on the
 system, you can install the Java Cryptographic Extension by running the following script:
 
 .. code-block:: shell
@@ -187,6 +176,13 @@ b. Offline Mode
     ..
 
 .. note:: Tip: To test that Elasticsearch is running type "curl localhost:9200". You should see a JSON response.
+
+**Option 3**: Use an existing Solr.
+    - To use Solr instead of Elastic search, follow 
+    https://kylo.readthedocs.io/en/latest/how-to-guides/ConfigureKyloForGlobalSearch.html#solr
+    
+.. note:: Also, please take a look at this thread that talks about a known limitation when using Solr:
+        https://groups.google.com/forum/#!msg/kylo-community/kbCIyRjUCCo/b9FPUi1IDAAJ 
 
 Step 6: Install ActiveMQ
 ========================
@@ -264,7 +260,7 @@ a. Install NiFi in either online or offline mode:
 
 .. code-block:: shell
 
-          $ <SETUP_DIR>/nifi/install-nifi.sh <NIFI_BASE_FOLDER> <NIFI_LINUX_USER> <NIFI_LINUX_GROUP>
+          $ <SETUP_DIR>/nifi/install-nifi.sh <NIFI_VERSION> <NIFI_BASE_FOLDER> <NIFI_LINUX_USER> <NIFI_LINUX_GROUP>
 
 ..
 
@@ -272,7 +268,7 @@ a. Install NiFi in either online or offline mode:
 
 .. code-block:: shell
 
-          $ <OFFLINE_SETUP_DIR>/nifi/install-nifi.sh  <NIFI_BASE_FOLDER> <NIFI_LINUX_USER> <NIFI_LINUX_GROUP> <OFFLINE_SETUP_DIR> -o
+          $ <OFFLINE_SETUP_DIR>/nifi/install-nifi.sh <NIFI_VERSION> <NIFI_BASE_FOLDER> <NIFI_LINUX_USER> <NIFI_LINUX_GROUP> <OFFLINE_SETUP_DIR> -o
 
 ..
 
@@ -317,23 +313,23 @@ In some cases you may want to leverage separate instances of NiFi or Hortonworks
 
 .. code-block:: shell
 
-           $ mkdir -p <NIFI_HOME>/kylo/lib
+           $ mkdir -p <NIFI_HOME>/current/lib
 
 ..
 
-4.  Copy the kylo-\*.nar files to the <NIFI_HOME>/kylo/lib directory.
+4.  Copy the kylo-\*.nar files to the <NIFI_HOME>/current/lib directory.
 
 ..
 
-5.  Create a directory called "app" in the <NIFI_HOME>/kylo/lib directory.
+5.  Create a directory called "app" in the <NIFI_HOME>/current/lib directory.
 
 .. code-block:: shell
 
-           $ mkdir <NIFI_HOME>/kylo/lib/app
+           $ mkdir <NIFI_HOME>/current/lib/app
 
 ..
 
-6.  Copy the kylo-spark-\*.jar files to the <NIFI_HOME>/kylo/lib/app directory.
+6.  Copy the kylo-spark-\*.jar files to the <NIFI_HOME>/current/lib/app directory.
 
 ..
 
@@ -341,9 +337,9 @@ In some cases you may want to leverage separate instances of NiFi or Hortonworks
 
 .. code-block:: shell
 
-           $ ln -s <NIFI_HOME>/kylo/lib/kylo-nifi-spark-nar-*.nar <NIFI_HOME>/lib/kylo-nifi-spark-nar.nar
+           $ ln -s <NIFI_HOME>/current/lib/kylo-nifi-spark-nar-*.nar <NIFI_HOME>/lib/kylo-nifi-spark-nar.nar
 
-           $ ln -s <NIFI_HOME>/kylo/lib/app/kylo-spark-interpreter-*-jar-with-dependencies.jar
+           $ ln -s <NIFI_HOME>/current/lib/app/kylo-spark-interpreter-*-jar-with-dependencies.jar
                      <NIFI_HOME>/lib/app/kylo-spark-interpreter-jar-with-dependencies.jar
 
 ..
@@ -381,6 +377,8 @@ In some cases you may want to leverage separate instances of NiFi or Hortonworks
 Configure the ext-config folder
 -------------------------------
 
+This section is required for Option 2 above. Skip this section if you followed Option 1.
+
 1. Create the folder.
 
 .. code-block:: shell
@@ -389,8 +387,34 @@ Configure the ext-config folder
 ..
 
 2. Copy the /opt/kylo/setup/nifi/config.properties file to the /opt/nifi/ext-config folder.
+   
+3. Setup the shared Kylo encryption key:
+   
+      1. Copy the encryption key file to the folder
 
-3. Change the ownership of the above folder to the same owner that nifi runs under. For example, if nifi runs as the "nifi" user:
+   .. code-block:: shell
+
+      cp /opt/kylo/encrypt.key /opt/nifi/ext-config
+   ..
+      
+      2. Change the ownership and permissions of the key file to ensure only nifi can read it
+
+   .. code-block:: shell
+
+      chown nifi /opt/nifi/ext-config/encrypt.key
+      chmod 400 /opt/nifi/ext-config/encrypt.key
+
+   ..
+   
+      3. Edit the ``/opt/nifi/current/bin/nifi-env.sh`` file and add the ENCRYPT_KEY variable with the key value
+
+   .. code-block:: shell
+
+      export ENCRYPT_KEY="$(< /opt/nifi/ext-config/encrypt.key)"
+      
+   ..
+
+4. Change the ownership of the above folder to the same owner that nifi runs under. For example, if nifi runs as the "nifi" user:
 
 .. code-block:: shell
 
@@ -398,10 +422,10 @@ Configure the ext-config folder
 
 ..
 
-11.  Create an activemq folder to provide JARs required for the JMS processors.
-
 Configure the activemq folder
 -----------------------------
+
+This section is required for Option 2 above. Skip this section if you followed Option 1.
 
 1. Create the folder.
 
@@ -434,3 +458,18 @@ OPTIONAL: The /opt/kylo/setup/nifi/install-kylo-components.sh contains steps to 
 .. |Install_Elasticsearch_Link| raw:: html
 
     <a href="https://www.elastic.co/support/matrix" target="_blank">Install_Elasticsearch</a>
+
+.. _install-xml-support:
+
+Step 8: Install XML Support
+===========================
+
+These instructions are not necessary for Hortonworks.
+
+1. Download the hivexmlserde.jar file from https://search.maven.org/search?q=hivexmlserde.
+
+2. Install the hivexmlserde.jar to Hive's auxlib folder on nodes running Hiveserver2 or NiFi. The auxlib folder is located at /usr/lib/hive/auxlib/ on CDH.
+
+3. Restart Hiveserver2.
+
+4. Find the `Validate and Split Records` processors in NiFi and add hivexmlserde.jar to the properties. If `SparkMaster` is "local" or "yarn-client" then add the path to the `Spark Configurations` property as :code:`spark.driver.extraClassPath=/usr/lib/hive/auxlib/hivexmlserde.jar`. If `SparkMaster` is "yarn-cluster" then add the path to the `Extra JARs` property.

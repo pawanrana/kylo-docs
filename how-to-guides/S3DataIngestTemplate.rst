@@ -12,7 +12,7 @@ You would like to ingest data from a S3 data source into Hive tables backed by S
 Introduction
 ============
 
-The Data Ingest S3 template is a variation of the standard Data Ingest template within Kylo.  The standard template utilizes HDFS backed hive tables, accepts inputs from local files, and is designed to run on a Cloudera or Hortonworks sandbox.  By contrast, the Data Ingest S3 template utilizes S3 backed hive tables, accepts inputs from an S3 bucket and is designed for use on an AWS stack utilizing EC2 and EMR. Additionally the template has improved performance in that data on s3 is not brought into the Nifi node.i  In order to accommodate these changes, the ExecuteHQLStatement processor has been updated and a new processor, CreateElasticsearchBackedHiveTable, has been created.
+The Data Ingest S3 template is a variation of the standard Data Ingest template within Kylo.  The standard template utilizes HDFS backed hive tables, accepts inputs from local files, and is designed to run on a Cloudera or Hortonworks sandbox.  By contrast, the Data Ingest S3 template utilizes S3 backed hive tables, accepts inputs from an S3 bucket and is designed for use on an AWS stack utilizing EC2 and EMR.  You can also use it with hadoop distributions other than EMR.  For simplicity’s sake, this document shows starting in section 2 how to use the HDP cluster that comes on our AWS Kylo Sandbox.  The S3 ingest template has improved performance in that data on s3 is not brought into the Nifi node.  In order to accommodate these changes, the ExecuteHQLStatement processor has been updated and a new processor, CreateElasticsearchBackedHiveTable, has been created.
 
 1. S3 Data Ingest Template Overview
 ===================================
@@ -33,7 +33,9 @@ Creating feeds from the S3 template is simplified by adding default values into 
 **config.s3ingest.hiveBucket**
   This property is the name output bucket where the data ends up. Hive will generate the folder structure within it.  Note: This bucket must have something in it. Hive cannot create folders within an empty S3 bucket.
 **config.s3ingest.es.nodes**
-  A comma separated list of Elasticsearch nodes that will be connected to.  
+  A comma separated list of Elasticsearch nodes that will be connected to.
+**config.s3ingest.hive.metastore_warehouse_location**
+  The location for the hive metastore warehouse found in hive-site.xml
 
 For Example settings see below.
 
@@ -68,6 +70,8 @@ Just like in the Standard ingestion template, this processor sets the attributes
   The comma separated list of node names for your elasticsearch nodes. 
 **s3ingest.s3.protocol:=${config.s3ingest.s3.protocol}**
   The protocol your cluster will use to access the S3 bucket. (e.g. 's3a')
+**s3ingest.hive.metastore_warehouse_location:=${config.s3ingest.hive.metastore_warehouse_location}**
+  The location for the hive metastore warehouse found in hive-site.xml
 
 1.2.3 DropInvalidFlowFile
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,7 +108,7 @@ In the statement for this processor the protocol for the s3 location may need to
 The following property has been modified:
 
 **filename**
-  The filename property will later be used by Failed Flow processor when the flowfile is placed into the temp location.  Since filename coming from S3List in the feed flow includes path information, it is stripped of that here.
+  The filename property will later be used by Failed Flow processor when the flowfile is placed into the temp location.  Since filename coming from the ListS3 processor in the feed flow includes path information, it is stripped of that here.
 
 1.3.5 Create Feed Partition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,11 +153,11 @@ This processor replaces the RemoveHDFSFolder processor in standard ingest.  It i
 2.1 Prerequisites
 -----------------
 
-Download the required JARS for Hive to write table data to ElasticSearch. Using the links below find the jars need and place them in a folder within your hive bucket (or other S3 bucket).  Make them public. In the end you should have jars available in S3 and the following commands should produce a good result:
+Download the required JARS for Hive to write table data to ElasticSearch.  You can find these in Maven Central at `Maven Central: Elasticsearch Hadoop 5.5.3 Jars <https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-hadoop/5.5.3>`_ and `Maven Central: Apache Commons HTTP 3.1 Jars <https://mvnrepository.com/artifact/commons-httpclient/commons-httpclient/3.1>`_.  Once you've downloaded thema you should place them in a folder within your hive bucket.  In the end you should have jars available in S3 and the following commands should produce a good result (see `Install the AWS Command Line Interface on Linux <https://docs.aws.amazon.com/cli/latest/userguide/awscli-install-linux.html>`_ to install AWS CLI on your edge node) :
 
 .. code-block:: shell
 
-  aws s3 ls s3://hive-bucket/jars/elasticsearch-hadoop-5.4.0.jar
+  aws s3 ls s3://hive-bucket/jars/elasticsearch-hadoop-5.5.3.jar
   aws s3 ls s3://hive-bucket/jars/commons-httpclient-3.1.jar
 
 ..
@@ -161,7 +165,7 @@ Download the required JARS for Hive to write table data to ElasticSearch. Using 
 2.2  Launch an EC2 instance using the Sandbox AMI
 -------------------------------------------------
 
-  The S3 template was developed using the 0.8.1 sandbox but relies on code changes to be released in the 0.8.2 release.  Go to AWS Market place and find the 0.8.2 or later sandbox for your region and launch the instance.  Wait 15 minutes or more for nifi service and kylo services to start.  Now shut down Nifi so we can change cluster configs and will need to refresh the NiFi connections to the cluster. Shut down Kylo so we change the application properties later. 
+  The S3 template was developed using the 0.8.1 sandbox but relies on code changes released in the 0.8.2 release.  Go to AWS Market place and find the 0.8.2 or later sandbox for your region and launch the instance (refer to https://kylo.io/quickstart-ami.html for the AMI id of the latest sandbox).  Wait 15 minutes or more for nifi service and kylo services to start.  Now shut down Nifi so we can change cluster configs and will need to refresh the NiFi connections to the cluster. Shut down Kylo and Nifi so we can configure these services in later sections. 
 
 .. code-block:: shell
 
@@ -181,7 +185,7 @@ In the core-site.xml where your data is to be processed make sure that your fs.s
   * for s3n use ``fs.s3n.awsAccessKeyId`` and ``fs.s3n.awsSecretAccessKey``
   * for s3a use  ``fs.s3a.access.key`` and ``fs.s3a.secret.key``
 
-  Depending on what distribution you are using the supported protocol may be different (s3, s3n) in which case you would need to use the equivalent property for that protocol.  Import the template using kylo-ui making sure to import the reusable portion as well as overwriting any previous versions of the template.
+  Depending on what distribution you are using the supported protocol may be different (s3, s3n) in which case you would need to use the equivalent property for that protocol.
 
 ..
 
@@ -201,6 +205,21 @@ Open Ambari and go to HDFS -> Configs -> Advanced -> Custom core-site section.  
   fs.s3a.secret.key=YYY
 
 ..
+
+.. warning::
+
+  Your cluster may not have been configured for Spark or Hive to read properties from core-site.xml.  In which case you may need to add the properties to one or more hive-site.xml files.
+
+  For Hive, go to Ambari and do this via the UI at 'Hive -> Configs -> Advanced -> Custom hive-site'
+
+  For Spark, manually edit the hive-site.xml files (which will be overwritten if Ambari restarts spark services, the Ambari section to maintain these properties is not currently working in HDP-2.6.5.0 and this bug has been observed by others https://community.hortonworks.com/questions/164800/spark2-custom-properties-in-hive-sitexml-are-ignor.html )
+
+  The hive-site xml files are: /etc/spark/conf/hive-site.xml, /etc/spark2/conf/hive-site.xml
+
+Beware that if you restart 
+
+..
+
 
 Go to Hive -> Configs -> Advanced -> Custom hive-site section.  Add the mapred.input.dir.recursive and hive.mapred.supports.subdirectories properties.
 
@@ -227,26 +246,16 @@ Go into Nifi UI and open up the Process Group Configuration and create a new AWS
 2.5 Get Kylo Ready
 ------------------
 
-Edit /opt/kylo/kylo-services/conf/elasticsearch.properties and edit your settings. 
-
-Change elasticsearch.host to be same as your host in use by the template, if not already done.  e.g. 
-
-.. code-block:: properties
-
-  search.host=localhost
-  search.clusterName=demo-cluster
-
-..
-
 Edit /opt/kylo/kylo-services/conf/application.properties and edit your settings.  Append your template defaults.   Example settings:
 
 .. code-block:: properties
 
   config.s3ingest.s3.protocol=s3a
   config.s3ingest.hiveBucket=hive-bucket
-  config.s3ingest.es.jar_url=s3a://hive-bucket/jars/elasticsearch-hadoop-5.4.0.jar
+  config.s3ingest.es.jar_url=s3a://hive-bucket/jars/elasticsearch-hadoop-5.5.3.jar
   config.s3ingest.apache-commons.jar_url=s3a://hive-bucket/jars/commons-httpclient-3.1.jar
   config.s3ingest.es.nodes=localhost
+  config.s3ingest.hive.metastore_warehouse_location=/hive_warehouse
 
 ..
 
@@ -260,7 +269,7 @@ Start Kylo
 
 2.6 Import the Template
 ---------------------------------------
-Go to Admin -> Templates section of Kylo.  Import the 'S3 Data Ingest' bundle from the kylo source repo path: `samples/templates/nifi-1.0/s3_data_ingest.template.zip`
+Go to Admin -> Templates section of Kylo.  Import the 'S3 Data Ingest' bundle from the kylo source repo path: `samples/templates/nifi-1.0/s3_data_ingest.template.zip`, making sure to import the reusable portion as well as overwriting any previous versions of the template.
 
 2.7 Create the Data Ingest Feed
 -------------------------------
@@ -279,13 +288,30 @@ Create a category called "S3 Feeds" to place your new feed.   Create a feed and 
 2.8 Test the Feed 
 -----------------
 
-Put a data file in your input bucket. Check Kylo to ensure your feed ran successfully!
+In the S3 bucket you configured for the feed, manually create an input folder with the name you provided for 'prefix' in the feed.  This is where the inputs for the feed should be placed.  Put a data file in this folder and check Kylo to ensure your feed ran successfully!
 
-3. Further Reference
+.. note::  The ListS3 processor in the feed template will, by design, keep state information about which files it has seen in your folder (the 'systemFeedName' folder you created in S3).  Consult Apache NiFi's istS3 processor documentation for more info.  This means that the feed only processes the data of the folder once, and again when the S3 folder contents change.
+
+3. Helpful Tips
+===============
+
+3.1 SQL Exceptions from Hive unable to reach Elastic Search
+-----------------------------------------------------------
+
+If you used a value other than localhost for `config.s3ingest.es.nodes` then be sure your elastic search server has been configured to listen on that interface or you may see an error like:
+
+|    2018-07-10 17:54:52,150 ERROR [Timer-Driven Process Thread-6] c.t.n.v.i.CreateElasticsearchBackedHiveTable CreateElasticsearchBackedHiveTable[id=609d71e2-015c-1000-dae6-aa4f4b1be180] Unable to execute SQL DDL [ADD JAR s3a://<..snip..>, CREATE EXTERNAL TABLE IF NOT EXISTS <..snip..> for StandardFlowFileRecord[uuid=<..snip..>] due to java.sql.SQLException: Error while processing statement: FAILED: Execution Error, return code 1 from org.apache.hadoop.hive.ql.exec.DDLTask.  org.elasticsearch.hadoop.EsHadoopIllegalArgumentException: Cannot detect ES version - typically this happens if the network/Elasticsearch cluster is not accessible or when targeting a WAN/Cloud instance without the proper setting 'es.nodes.wan.only'; routing to failure
+
+This error comes from Hive attempting to write data to an Elastic Search index. You can modify the interfaces that elastic will respond on by editing your elasticsearch.yml config (e.g. `vim /etc/elasticsearch/elasticsearch.yml`) and change `network.host: 0.0.0.0`, which will instruct elastic to listen on all interfaces (often this is safe to do if you have used AWS VPC rules to restrict network between edge and cluster nodes, otherwise consider carefully the ramifications of opening your server to listen on interfaces other than just localhost).  Be sure to restart elastic after the configs have been modified `service elasticsearch restart`.
+
+Test your connection from your cluster's nodes before running your next feed e.g. `telnet 172.X.X.X 9200`
+
+
+4. Further Reference
 ====================
 
 * `Configure Apache Hive to Recursively Search Directories for Files <https://joshuafennessy.com/2015/06/30/configure-apache-hive-to-recursively-search-directories-for-files/>`_
 * `Hadoop-AWS module: Integration with Amazon Web Services  <https://hadoop.apache.org/docs/r2.8.0/hadoop-aws/tools/hadoop-aws/index.html#S3A_Authentication_methods>`_
 * `LanguageManual DDL: Rename Table <https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DDL#LanguageManualDDL-RenameTable>`_
-* `Maven Central: Elasticsearch Haddop Jars <https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-hadoop>`_
+* `Maven Central: Elasticsearch Hadoop Jars <https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-hadoop>`_
 * `Maven Central: Apache Commons HTTP Jars <https://mvnrepository.com/artifact/commons-httpclient/commons-httpclient>`_

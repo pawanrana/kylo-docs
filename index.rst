@@ -60,6 +60,8 @@ The documentation for the site is organized into a few sections:
     :caption: Installation Examples
 
     installation/HDP25ClusterDeploymentGuide
+    installation/EMR5.15PersistentClusterWithEdgeNode
+    installation/Mapr6.01KyloInstallation
 
 .. _common_configuration_toc:
 .. toctree::
@@ -71,7 +73,7 @@ The documentation for the site is organized into a few sections:
     common-config/ChangeJavaHome
     Log File Management <common-config/LogFiles>
     common-config/YarnClusterConfiguration
-    Configure Spark Modes <common-config/KyloSparkProperties>
+    Configure Spark Shell <common-config/KyloSparkProperties>
     common-config/Postgres_Hive_Metadata_Configuration
 
 .. _security_toc:
@@ -82,7 +84,7 @@ The documentation for the site is organized into a few sections:
     Overview <security/Overview>
     Encrypt Passwords <security/EncryptingConfigurationProperties>
     Enable Kerberos for Kylo <security/KerberosKyloConfiguration>
-    Enble Kerberos for NiFi <security/KerberosNiFiConfiguration>
+    Enable Kerberos for NiFi <security/KerberosNiFiConfiguration>
     Configure Ranger <security/EnableRangerAuthorizationGuide>
     Configure Sentry <security/EnableSentryAuthorizationGuide>
     Enable SSL for Kylo <security/KyloUIWithSSL>
@@ -104,6 +106,7 @@ The documentation for the site is organized into a few sections:
     Nifi Processors <how-to-guides/NiFiProcessorsDocs>
     Kylo Templates <how-to-guides/KyloTemplatesDocs>
     Connecting Reusable Templates <how-to-guides/ConnectReusableTemplates>
+    Remote Process Groups <how-to-guides/RemoteProcessGroups>
     Kylo Datasources <how-to-guides/KyloDatasources>
     Feed Lineage <how-to-guides/FeedLineage>
     Custom Provenance <how-to-guides/CustomProvenanceEvents>
@@ -124,6 +127,7 @@ The documentation for the site is organized into a few sections:
     Entity Access Control for Elasticsearch <how-to-guides/EntityAccessControlForElasticsearch>
     Service Level Agreements <how-to-guides/ServiceLevelAgreements>
     Configuration Inspector App <how-to-guides/ConfigurationInspectorApp>
+    Teradata Data Ingest Template <how-to-guides/DataIngestTeradataTDCHTemplate>
 
 
 .. _developer_guides:

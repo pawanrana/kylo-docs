@@ -1,12 +1,12 @@
-=====================
+========
 Overview
-=====================
+========
 The best way to get started with Kylo is to keep it simple at first. Get Kylo up and running with a single node and test a simple feed
 before enabling features such as clustering, SSL, encryption,etc. This installation section will help you get Kylo up and running, then
 give you some guidance on where to go from there.
 
 Installation Methods
-=====================
+====================
 Kylo has 3 build distributions:
 
   - **RPM** - An easy and opinionated way of installing Kylo on Redhat based systems
@@ -51,5 +51,5 @@ system locations:
 -  Elasticsearch - RPM installation default location
 
 Demo Sandbox
-==============
+============
 If you are interested in running a working example of Kylo you might consider running one of our demo sandboxes located on the http://kylo.io/quickstart.html website

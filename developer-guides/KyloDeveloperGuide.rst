@@ -5,7 +5,7 @@ Developer Getting Started Guide
 
 This guide should help you get your local development environment up and
 running quickly. Development in an IDE is usually done in conjunction
-with a Hortonworks sandbox in order to have a cluster with which to communicate.
+with a Kylo sandbox in order to have a cluster with which to communicate.
 
 Dependencies
 ------------
@@ -18,7 +18,7 @@ To run the Kylo project locally the following tools must be installed:
 
 -  Java 1.8 (or greater)
 
--  Hadoop 2.3+ Sandbox
+-  Kylo 0.9+ Sandbox
 
 -  Virtual Box or other virtual machine manager
 
@@ -123,46 +123,20 @@ everything is setup correctly.
     ``$ mvn clean install -o -DskipTests``
 ..
 
-Install and Configure the Hortonworks Sandbox
----------------------------------------------
+Install and Configure the Kylo Sandbox
+--------------------------------------
 
-Follow the guide below to install and configure the Hortonworks sandbox:
+1. `Download and install Kylo sandbox <https://kylo.io/quickstart.html>`__. Make sure 10GB RAM is assigned to the VM. The sandbox comes bundled with Kylo apps, NiFi, ActiveMQ, Elasticsearch and MySQL.
 
-    :doc:`../developer-guides/HortonworksSandboxConfiguration`
+2. Start the VM from VirtualBox.
 
+3. Go to http://localhost:8400. Congratulations! Kylo is up and running. Login with credentials dladmin/thinkbig.
 
-Install the Kylo Applications
------------------------------
-
-To install the Kylo apps, NiFi, ActiveMQ, and Elasticsearch in the
-VM you can use the deployment wizard instructions found here:
-
-    :doc:`../installation/SetupWizardDeploymentGuide`
-
-Instead of downloading the RPM file copy the RPM file from your project folder after running a Maven build.
-
-.. code-block:: shell
-
-    $ cd /opt
-    $ cp /media/sf_kylo/install/target/rpm/kylo/RPMS/noarch/kylo-<version>.noarch.rpm.
-    $ rpm -ivh kylo-<version>.rpm
-
-..
-
-Follow the rest of the deployment wizard steps to install the rest of
-the tools in the VM.
-
-
-.. important!:: You only need to install Elasticsearch, NiFi, and ActiveMQ once. During development you will frequently uninstall the Kylo RPM and re-install it for testing.
-
-
-You now have a distribution of the stack running in your Hortonworks
-sandbox.
 
 Running in the IDE
 ------------------
 
-You can run kylo-ui and thinkbig-services in the IDE. If you plan to
+You can run kylo-ui and kylo-services in the IDE. If you plan to
 run the apps in the IDE, you should shut down the services in your
 sandbox so you aren’t running two instances at the same time.
 
@@ -170,6 +144,8 @@ sandbox so you aren’t running two instances at the same time.
 
     $ service kylo-services stop
     $ service kylo-ui stop
+    $ service kylo-services status
+    $ service kylo-ui status
 
 The applications are configured using Spring Boot.
 
@@ -216,6 +192,25 @@ IntelliJ Configuration
 
         modeshape.index.dir=<value>
 
+   h. The Kylo Spark Shell currently does not run from an IDE. When you run the server you will encounter error stating: "Unable to determine Spark version."
+
+   i. If you won't be uploading sample files or using Data Transformation or Visual Query, then you can ignore that error and continue development.
+
+   j. If you want to have spark shell started you need to manually run it in your sandbox by running command:
+
+    .. code-block:: shell
+
+        $ /opt/kylo/kylo-services/bin/run-kylo-spark-shell.sh
+
+   k. `Enable port forwarding for port 8450 <https://www.virtualbox.org/manual/ch06.html>`__ in VirtualBox.
+
+   l. Add the following lines to spark.properties in your IDE:
+
+     .. code-block:: shell
+
+         spark.shell.server.host=localhost
+         spark.shell.server.port=8450
+
 3. Create the kylo-ui application run configuration.
 
    a. Open the Run configurations.
@@ -229,8 +224,30 @@ IntelliJ Configuration
 
    e. Set the "Main Class" property to
       "com.thinkbiganalytics.KyloUiApplication".
+   
+   f. Add "native,auth-kylo,dev" to list of Active Profiles.
 
-4. Run both applications.
+   g. Add a file named "application-dev.properties" to kylo-ui at kylo/ui/ui-app/src/main/resources location. Add following properties:
+
+    .. code-block:: shell
+
+        security.auth.file.users=file:///opt/kylo/users.properties
+        security.auth.file.groups=file:///opt/kylo/groups.properties
+
+4. Create users.properties in /opt/kylo and add following content:
+   
+    .. code-block:: shell
+
+        dladmin=thinkbig
+        analyst=analyst
+        designer=designer
+        operator=operator
+
+5. Create empty file groups.properties under /opt/kylo. Add permissions to both files created above: chmod 777
+
+6. Go to Maven Projects view in IntelliJ and under Profiles check nifi.version.override and prod.
+
+7. Run both applications.
 
 Eclipse Configuration
 ---------------------
@@ -268,41 +285,25 @@ Web Development
 
 Most of the Kylo UI depends on |AngularJsLink| and |AngularJsMaterialLink| but a few parts have been upgraded to |Angular2Link| and |CovalentLink|. New plugins should be written in Typescript and use Angular 2 for future compatibility.
 
-NPM should be used to configure and start your web development environment:
+Start your web development environment:
 
-1. Install NPM in your development environment:
-
-    * apt-get install npm (Debian / Ubuntu)
-    * brew install npm (Mac)
-
-2. Install the development packages:
+1. Install the development packages and local NPM:
 
 .. code-block:: shell
 
     $ cd kylo/ui/ui-app
-    $ npm install
+    $ mvn clean package
 
-3. Start Kylo and the development server:
+2. Start Kylo and the development server:
 
 .. code-block:: shell
 
     $ service kylo-services start
     $ service kylo-ui start
-    $ npm run start
+    $ ./npm start
 
-4. A new browser window will open showing the Kylo UI. Any changes you make will automatically refresh the page with the new changes.
+3. A new browser window will open showing the Kylo UI. Any changes you make will automatically refresh the page with the new changes.
 
-If you will be editing stylesheets then you will need to additionally configure IntelliJ to compile SCSS files:
-
-1. Install the File Watchers plugin and restart IntelliJ.
-
-2. Go to Preferences -> Tools -> File Watchers.
-
-3. Click the + plus sign at the bottom and create a SCSS file watcher.
-
-4. Change the Arguments to: :code:`--output $FileDir$ $FilePath$`
-
-5. Change the Output paths to refresh to: :code:`$FileNameWithoutExtension$.css`
 
 Angular Material Notes
 ----------------------
@@ -314,6 +315,8 @@ There are a few notes worth mentioning about using AngularJS Material:
 2. Do not refer to Angular model in plain HTML ``style`` element, it is broken on IE. Instead use Angular ``ng-style`` element which works on all browsers like so ``ng-style="{'fill':controller.fillColor}"``
 
 3. Do not use ``flex`` element where you don't have to. Browsers will usually flex elements correctly. This is to minimise the occurrence of ``flex`` being required by Safari while breaking layout on IE.
+
+
 
 .. |AngularJsLink| raw:: html
 

@@ -19,6 +19,38 @@ to make authorization checks.  For instance, a LoginModule that authenticates
 a user's credentials using LDAP may also load any groups defined in the LDAP store
 for that user, and these groups can have permissions granted to them in Kylo.
 
+Logging
+~~~~~~~
+
+Kylo can be configured to log every authentication request and logout by every user.  This is turned off by default.    The log message format can be specified with various standard fields that will substitued in the message based on the context
+during the access control check.  The valid fields are: 
+
++----------+-------------------------------------------------------------------------------------------------------+
+| Field    | Description                                                                                           |
++==========+=======================================================================================================+
+| `RESULT` | The result of the authentication or logout attempt (ex: "success" or "failure" with an error message) |
++----------+-------------------------------------------------------------------------------------------------------+
+| `USER`   | The user being authenticated / logged out                                                             |
++----------+-------------------------------------------------------------------------------------------------------+
+| `GROUPS` | The groups of the user                                                                                |
++----------+-------------------------------------------------------------------------------------------------------+
+
+To enable authentication logging you can configure the properties in the table below in the kylo-ui and/or kylo-services properties file.
+
+.. note:: If kylo-ui is configured with the profile **auth-kylo** then it will deletage all authentication to kylo-services.  In this case you may only want to configure authentication logging on the kylo-services side.
+
++---------------------------------+----------+----------------------------------------------------+----------------------------------------------------------------------------------------------------------------+
+| Properties                      | Required | Default                                            | Description                                                                                                    |
++=================================+==========+====================================================+================================================================================================================+
+| security.log.auth               | No       | ``false``                                          | Activates logging of every access control check                                                                |
++---------------------------------+----------+----------------------------------------------------+----------------------------------------------------------------------------------------------------------------+
+| security.log.auth.level         | No       | ``DEBUG``                                          | The log level used to log the attempt                                                                          |
++---------------------------------+----------+----------------------------------------------------+----------------------------------------------------------------------------------------------------------------+
+| security.log.auth.login.format  | No       | ``Authentication attempt: {RESULT}, user: {USER}`` | The format of the login attempt message with embedded fields to be substitued with the authentication details  |
++---------------------------------+----------+----------------------------------------------------+----------------------------------------------------------------------------------------------------------------+
+| security.log.auth.logout.format | No       | ``Logout attempt: {RESULT}, user: {USER}``         | The format of the logout attempt message with embedded fields to be substitued with the authentication details |
++---------------------------------+----------+----------------------------------------------------+----------------------------------------------------------------------------------------------------------------+
+
 Built-In Pluggable Authentication Profiles
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -107,15 +139,28 @@ file when `auth-file` is used with `auth-kylo`, as the latter profile will load 
 assigned groups from the Kylo store as well as those defined in the group file.  It would likely
 be confusing to have to manage groups from two different sources.
 
-.. note:: The `auth-file` profile should generally not be used in a production environment because it currently stores user passwords in the clear.  It is primarily used only in development and testing.
+.. note:: The `auth-file` profile should generally not be used in a production environment unless the passwords are encrypted (see below.)  The default is to expect the user passwords to be **unencrypted**.
 
-+---------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
-| Properties                | Required | Example               | Description                                                                                                        |
-+===========================+==========+=======================+====================================================================================================================+
-| security.auth.file.users  | No       | ``users.properties``  | The value is either a name of a resource found on the classpath or, if prepended by `file:///`, a direct file path |
-+---------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
-| security.auth.file.groups | No       | ``groups.properties`` | The same as security.auth.file.users but for the groups file                                                       |
-+---------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
++--------------------------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
+| Properties                                 | Required | Example               | Description                                                                                                        |
++============================================+==========+=======================+====================================================================================================================+
+| security.auth.file.users                   | No       | ``users.properties``  | The value is either a name of a resource found on the classpath or, if prepended by `file:///`, a direct file path |
++--------------------------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
+| security.auth.file.groups                  | No       | ``groups.properties`` | The same as security.auth.file.users but for the groups file                                                       |
++--------------------------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
+| security.auth.file.password.hash.enabled   | No       | ``false``             | Indicates whether the passwords in ``users.properties`` are hashed                                                 |
++--------------------------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
+| security.auth.file.password.hash.algorithm | No       | ``SHA-256``           | Specifies the java.security.MessageDigest algorithm used to hash the passwords                                     |
++--------------------------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
+| security.auth.file.password.hash.encoding  | No       | ``hex``               | Specifies the byte encoding used for the hashed passwords (``hex``, ``base64``, ``rfc2617``)                       |
++--------------------------------------------+----------+-----------------------+--------------------------------------------------------------------------------------------------------------------+
+
+If `auth-file` is configured to use hashed passwords, then password values can be generated on the command line of most *nix systems, assuming the default digest and encoding settings, using:
+
+::
+
+   $ echo -n "mypassword" | shasum -a 256 | cut -d' ' -f1 
+
 
 If `auth-file` is active and no users file property is specified in the configuration then these implicit username/password properties will be assumed:
 
@@ -241,13 +286,13 @@ This profile will limit user groups to only those which also exist in Kylo. It i
 This profile is useful to prevent JWT token size overflow when user is part of many groups in other stores.
 Lets consider following example where a user is part of following groups in Active Directory and following groups exist in Kylo:
 
-+------------------+----------------------------------------------+
-| User store       | Groups                                       |
-+==================+==============================================+
-| Active Directory | Group A, Group B, Group C, Group D, Group E  |
-+------------------+----------------------------------------------+
-| Kylo             | Group B, Group D, Group F                    |
-+------------------+----------------------------------------------+
++------------------+---------------------------------------------+
+| User store       | Groups                                      |
++==================+=============================================+
+| Active Directory | Group A, Group B, Group C, Group D, Group E |
++------------------+---------------------------------------------+
+| Kylo             | Group B, Group D, Group F                   |
++------------------+---------------------------------------------+
 
 Then having `auth-kylo-groups` profile will limit user groups to: Group B, Group D
 

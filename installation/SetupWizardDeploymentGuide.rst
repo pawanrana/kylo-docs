@@ -18,7 +18,7 @@ a. From the /opt/kylo/setup directory
 
     $ /opt/kylo/setup/setup-wizard.sh
 
-b. Offline mode from another directory (using TAR file)
+b. Offline mode from another directory (using offline setup TAR file)
 
 .. code-block:: shell
 
@@ -29,6 +29,7 @@ b. Offline mode from another directory (using TAR file)
 .. note:: Both -o and -O work.
 
 Follow the directions to install the following:
+
 -  MySQL or Postgres scripts into the local database
 
 -  Elasticsearch
